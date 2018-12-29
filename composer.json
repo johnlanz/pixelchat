@@ -1,0 +1,12 @@
+{
+    "name": "pixelchat",
+    "require": {
+        "ezyang/htmlpurifier": "^4.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "sethink\\swooleOrm\\":"plugins/swoole-orm/src"
+        }
+    }
+}
