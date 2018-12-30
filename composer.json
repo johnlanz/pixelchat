@@ -8,5 +8,8 @@
             "App\\": "app/",
             "sethink\\swooleOrm\\":"plugins/swoole-orm/src"
         }
+    },
+    "require-dev": {
+        "symfony/dotenv": "^4.2"
     }
 }

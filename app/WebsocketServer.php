@@ -15,7 +15,9 @@ class WebsocketServer
 
 	public function __construct()
     {
-        $this->ws = new \swoole_websocket_server("127.0.0.1", 9501);
+        echo "host: " . getenv('WS_HOST') . "\n";
+        echo "port: " . getenv('WS_PORT') . "\n";
+        $this->ws = new \swoole_websocket_server(getenv('WS_HOST'), getenv('WS_PORT'));
 
         $this->ws->on('open', function (\swoole_websocket_server $ws, $request) {
             echo "server: handshake success with fd: {$request->fd}\n";
@@ -49,15 +51,15 @@ class WebsocketServer
         }); */
 
         $config    = [
-            'host'      => 'localhost',
-            'port'      => 3306,
-            'user'      => 'admin',
-            'password'  => 'M123chael',
-            'charset'   => 'utf8',
-            'database'  => 'twitch',
-            'poolMin'   => 5,
-            'clearTime' => 60000,
-            'clearAll'  => 300000,
+            'host'      => getenv('DB_HOST'),
+            'port'      => getenv('DB_PORT'),
+            'user'      => getenv('DB_USER'),
+            'password'  => getenv('DB_PASS'),
+            'charset'   => getenv('DB_CHARSET'),
+            'database'  => getenv('DB_DATABASE'),
+            'poolMin'   => getenv('DB_POOLMIN'),
+            'clearTime' => getenv('DB_CLEARTIME'),
+            'clearAll'  => getenv('DB_CLEARALL'),
         ];
         $this->MysqlPool = new MysqlPool($config);
         unset($config);
@@ -207,20 +209,5 @@ class WebsocketServer
         foreach ($chats as $chat) {
             $ws->push($userInfo['fd'], json_encode($chat));
         }
-    }
-
-    protected function allUserByRoom($room)
-    {
-        $user_list = $this->redis->hget("{$this->userList}_{$room}");
-        $users = [];
-        if (!empty($user_list)) {
-            foreach ($user_list as $fd) {
-                $user = $this->table->get($fd);
-                if (!empty($user)) {
-                    $users[] = $user;
-                }
-            }
-        }
-        return $users;
     }
 }
