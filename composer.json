@@ -1,7 +1,8 @@
 {
     "name": "pixelchat",
     "require": {
-        "ezyang/htmlpurifier": "^4.10"
+        "ezyang/htmlpurifier": "^4.10",
+        "nesbot/carbon": "^2.9"
     },
     "autoload": {
         "psr-4": {

@@ -3,6 +3,7 @@ namespace App;
 
 use sethink\swooleOrm\Db;
 use sethink\swooleOrm\MysqlPool;
+use Carbon\Carbon;
 
 class WebsocketServer
 {
@@ -104,11 +105,14 @@ class WebsocketServer
             return;
         }
         $roomUsers = $this->getAllUsersInRoom($message['room']);
+        $saved = $this->saveMessage($message);
         if (!empty($roomUsers)) {
+            if (!empty($message['created'])) {
+                $message['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $message['created'])->diffForHumans();
+            }
             foreach ($roomUsers as $roomUsers) {
                 $ws->push($roomUsers['fd'], json_encode($message));
             }
-            $saved = $this->saveMessage($message);
         }
     }
 
@@ -207,6 +211,9 @@ class WebsocketServer
             ->select();
 
         foreach ($chats as $chat) {
+            if (!empty($chat['created'])) {
+                $chat['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $chat['created'])->diffForHumans();
+            }
             $ws->push($userInfo['fd'], json_encode($chat));
         }
     }
