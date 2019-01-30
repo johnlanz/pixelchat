@@ -104,6 +104,11 @@ class WebsocketServer
             //not allowed to send message
             return;
         }
+        $message = $this->cheerMessage($message);
+        if (!empty($message['nocheer'])) {
+            //not allowed to send message
+            return;
+        }
         $roomUsers = $this->getAllUsersInRoom($message['room']);
         $saved = $this->saveMessage($message);
         if (!empty($roomUsers)) {
@@ -114,6 +119,55 @@ class WebsocketServer
                 $ws->push($roomUsers['fd'], json_encode($message));
             }
         }
+    }
+
+    protected function cheerMessage($message = [])
+    {
+        $message['nocheer'] = false;
+        $cheers = Db::init($this->MysqlPool)
+            ->name('currency_emojis')
+            ->field('id,code,points')
+            ->select();
+        $points = 0;
+        foreach ($cheers as $cheer) {
+            $counts = substr_count($message['message'], $cheer['code']);
+            if ($counts > 0) {
+                $points = $points + ((int)$cheer['points'] * $counts);
+            }
+        }
+        $user = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,username,token,coin')
+            ->where(['token' => $message['room']])
+            ->find();
+        //print_r($user);
+        if ($points > 0) {
+            if ($user[0]['coin'] <= $points) {
+                $message['nocheer'] = true;
+                return $message;
+            }
+            $updateCoin = $user[0]['coin'] - $points;
+            $sender = Db::init($this->MysqlPool)
+                ->name('users')
+                ->field('id,username,token,coin')
+                ->where(['username' => $message['username']])
+                ->find();
+            Db::init($this->MysqlPool)
+                ->name('users')->where(['id' => $sender[0]['id']])
+                ->update(['coin' => $updateCoin]);    
+            $userPoints = [
+                'user_id' => $sender[0]['id'],
+                'send_to' => $user[0]['id'],
+                'points' => $points,
+                'created' => date("Y-m-d H:i:s"),
+                'modified' => date("Y-m-d H:i:s")
+            ];
+            Db::init($this->MysqlPool)
+            ->name('user_points')
+            ->insert($userPoints);
+            $message['updateCoin'] = $updateCoin;
+        }
+        return $message;
     }
 
     protected function getAllUsersInRoom($room)
@@ -153,6 +207,8 @@ class WebsocketServer
 
     protected function saveMessage($message)
     {
+        unset($message['updateCoin']);
+        unset($message['nocheer']);
         unset($message['type']);
         $message['modified'] = $message['created'];
         return Db::init($this->MysqlPool)
@@ -204,11 +260,16 @@ class WebsocketServer
 
     protected function pushAllMessagesToUser(\swoole_websocket_server $ws, $userInfo = [])
     {
-        $chats = Db::init($this->MysqlPool)
+       $chats = Db::init($this->MysqlPool)
             ->name('chats')
             ->where(['room'=> $userInfo['room']])
+            ->order(['id'=>['id' => 'desc']])
             ->limit(20)
             ->select();
+        //print_r($userInfo);
+        
+        krsort($chats);
+        //print_r($chats);
 
         foreach ($chats as $chat) {
             if (!empty($chat['created'])) {
