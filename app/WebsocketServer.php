@@ -233,22 +233,25 @@ class WebsocketServer
 
     protected function logout(\swoole_websocket_server $ws, $fd)
     {
-        $this->numberOfUsers($ws, $fd, 'subtract');
+        $chatrooms = Db::init($this->MysqlPool)
+            ->name('chatrooms')
+            ->where(['fd'=> $fd])
+            ->find();
+        $userInfo = $chatrooms[0];
+        
         echo "Logout/Delete FD: {$fd}\n";
         Db::init($this->MysqlPool)
             ->name('chatrooms')
             ->where(['fd'=> $fd])
             ->delete();
+
+        $this->numberOfUsers($ws, $fd, 'subtract', $userInfo);
     }
 
     protected function numberOfUsers($ws, $fd, $method = 'add', $userInfo = [])
     {
         if (empty($userInfo)) {
-            $chatrooms = Db::init($this->MysqlPool)
-                ->name('chatrooms')
-                ->where(['fd'=> $fd])
-                ->find();
-            $userInfo = $chatrooms[0];
+            return;
         }
         //print_r($userInfo);
 
