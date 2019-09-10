@@ -227,15 +227,61 @@ class WebsocketServer
 
         $this->createUpdateRoomUserList($userInfo);
         $this->pushAllMessagesToUser($ws, $userInfo);
+
+        $this->numberOfUsers($ws, $fd, 'add', $userInfo);
     }
 
     protected function logout(\swoole_websocket_server $ws, $fd)
     {
+        $this->numberOfUsers($ws, $fd, 'subtract');
         echo "Logout/Delete FD: {$fd}\n";
         Db::init($this->MysqlPool)
             ->name('chatrooms')
             ->where(['fd'=> $fd])
             ->delete();
+    }
+
+    protected function numberOfUsers($ws, $fd, $method = 'add', $userInfo = [])
+    {
+        if (empty($userInfo)) {
+            $chatrooms = Db::init($this->MysqlPool)
+                ->name('chatrooms')
+                ->where(['fd'=> $fd])
+                ->find();
+            $userInfo = $chatrooms[0];
+        }
+        //print_r($userInfo);
+
+        //update live user viewers
+        $user = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,username,token,live_viewers')
+            ->where(['token' => $userInfo['room']])
+            ->find();
+        if (!empty($user)) {
+            $user = $user[0];
+            //print_r($user);
+            if ($method == 'add') {
+                $viewers = (int)$user['live_viewers'] + 1;
+            } else {
+                $viewers = (int)$user['live_viewers'] - 1;
+            }
+            Db::init($this->MysqlPool)
+                ->name('users')->where(['id' => $user['id']])
+                ->update(['live_viewers' => $viewers]);
+
+            $roomUsers = $this->getAllUsersInRoom($userInfo['room']);
+            if (!empty($roomUsers)) {
+                $message = [
+                    'update_viewers' => true,
+                    'live_viewers' => $viewers
+                ];
+                foreach ($roomUsers as $roomUsers) {
+                    $ws->push($roomUsers['fd'], json_encode($message));
+                }
+            }
+        }
+        //print_r($userInfo);
     }
 
     protected function createUpdateRoomUserList($userInfo = [])
