@@ -154,7 +154,38 @@ class WebsocketServer
                 ->find();
             Db::init($this->MysqlPool)
                 ->name('users')->where(['id' => $sender[0]['id']])
-                ->update(['coin' => $updateCoin]);    
+                ->update(['coin' => $updateCoin]);
+            
+            //user top points
+            $userTopPoints = Db::init($this->MysqlPool)
+            ->name('user_top_points')
+            ->field('id,user_id,streamer_id,points')
+            ->where([
+                'user_id' => $sender[0]['id'],
+                'streamer_id' => $user[0]['id']
+            ])
+            ->find();
+            if (empty($userTopPoints[0])) {
+                //insert top Points
+                $topPoints = [
+                    'user_id' => $sender[0]['id'],
+                    'streamer_id' => $user[0]['id'],
+                    'points' => $points,
+                    'created' => date("Y-m-d H:i:s"),
+                    'modified' => date("Y-m-d H:i:s")
+                ];
+                Db::init($this->MysqlPool)
+                ->name('user_top_points')
+                ->insert($topPoints);
+            } else {
+                $updatePoints = $userTopPoints[0]['points'] + $points;
+                //update top points
+                Db::init($this->MysqlPool)
+                ->name('user_top_points')->where(['id' => $userTopPoints[0]['id']])
+                ->update(['points' => $updatePoints]);
+            }
+            
+            //user Points
             $userPoints = [
                 'user_id' => $sender[0]['id'],
                 'send_to' => $user[0]['id'],
