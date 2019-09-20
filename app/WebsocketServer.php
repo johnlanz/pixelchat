@@ -86,6 +86,9 @@ class WebsocketServer
                     case "login":
                         $this->login($ws, $frame->fd, $message);
                         break;
+                    case "login_video":
+                        $this->loginVideo($ws, $frame->fd, $message);
+                        break;
                     case "message":
                         $this->serverPush($ws, $frame->fd, $message);
                         break;
@@ -201,14 +204,6 @@ class WebsocketServer
         return $message;
     }
 
-    protected function getAllUsersInRoom($room)
-    {
-        return Db::init($this->MysqlPool)
-            ->name('chatrooms')
-            ->where(['room'=> $room])
-            ->select();
-    }
-
     protected function checkMessage($message)
     {
         $message = json_decode($message);
@@ -255,9 +250,42 @@ class WebsocketServer
         $userInfo["fd"] = $fd;
         $userInfo["room"] = $message['room'];
         $userInfo["username"] = $message['username'];
+        $userInfo["video"] = 1;
+        $userInfo["chat"] = 1;
 
         $this->createUpdateRoomUserList($userInfo);
         $this->pushAllMessagesToUser($ws, $userInfo);
+
+        $this->numberOfUsers($ws, $fd, 'add', $userInfo);
+    }
+
+    protected function loginVideo(\swoole_websocket_server $ws, $fd, $message = [])
+    {
+        if (empty($message['username'])) {
+            $message['username'] = 'guest' . $fd;
+        }
+        $userInfo["fd"] = $fd;
+        $userInfo["room"] = $message['room'];
+        $userInfo["username"] = $message['username'];
+        $userInfo["video"] = 1;
+        $userInfo["chat"] = 0;
+
+        $chatRoom = Db::init($this->MysqlPool)
+            ->name('chatrooms')
+            ->where(['fd'=> $userInfo['fd']])
+            ->find();
+        if (empty($chatRoom)) {
+            //create chatroom
+            Db::init($this->MysqlPool)
+                ->name('chatrooms')
+                ->insert($userInfo);
+        } else {
+            //update chatroom
+            Db::init($this->MysqlPool)
+                ->name('chatrooms')
+                ->where(['fd'=> $userInfo['fd']])
+                ->update($userInfo);
+        }
 
         $this->numberOfUsers($ws, $fd, 'add', $userInfo);
     }
@@ -285,34 +313,17 @@ class WebsocketServer
             return;
         }
         //print_r($userInfo);
-
-        //update live user viewers
-        $user = Db::init($this->MysqlPool)
-            ->name('users')
-            ->field('id,username,token,live_viewers')
-            ->where(['token' => $userInfo['room']])
-            ->find();
-        if (!empty($user)) {
-            $user = $user[0];
-            //print_r($user);
-            if ($method == 'add') {
-                $viewers = (int)$user['live_viewers'] + 1;
-            } else {
-                $viewers = (int)$user['live_viewers'] - 1;
-            }
-            Db::init($this->MysqlPool)
-                ->name('users')->where(['id' => $user['id']])
-                ->update(['live_viewers' => $viewers]);
-
-            $roomUsers = $this->getAllUsersInRoom($userInfo['room']);
-            if (!empty($roomUsers)) {
-                $message = [
-                    'update_viewers' => true,
-                    'live_viewers' => $viewers
-                ];
-                foreach ($roomUsers as $roomUsers) {
-                    $ws->push($roomUsers['fd'], json_encode($message));
-                }
+        $roomUsers = Db::init($this->MysqlPool)
+        ->name('chatrooms')
+        ->where(['room'=> $userInfo['room'], 'video' => 1])
+        ->select();
+        if (!empty($roomUsers)) {
+            $message = [
+                'update_viewers' => true,
+                'live_viewers' => count($roomUsers)
+            ];
+            foreach ($roomUsers as $roomUsers) {
+                $ws->push($roomUsers['fd'], json_encode($message));
             }
         }
         //print_r($userInfo);
@@ -336,6 +347,14 @@ class WebsocketServer
                 ->where(['fd'=> $userInfo['fd']])
                 ->update($userInfo);
         }
+    }
+
+    protected function getAllUsersInRoom($room)
+    {
+        return Db::init($this->MysqlPool)
+            ->name('chatrooms')
+            ->where(['room'=> $room])
+            ->select();
     }
 
     protected function pushAllMessagesToUser(\swoole_websocket_server $ws, $userInfo = [])
