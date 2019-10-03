@@ -116,7 +116,7 @@ class WebsocketServer
         $saved = $this->saveMessage($message);
         if (!empty($roomUsers)) {
             if (!empty($message['created'])) {
-                $message['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $message['created'])->diffForHumans();
+                $message['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $message['created'])->isoFormat('MMM D, h:mm:ss');
             }
             foreach ($roomUsers as $roomUsers) {
                 $ws->push($roomUsers['fd'], json_encode($message));
@@ -372,7 +372,7 @@ class WebsocketServer
 
         foreach ($chats as $chat) {
             if (!empty($chat['created'])) {
-                $chat['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $chat['created'])->diffForHumans();
+                $chat['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $chat['created'])->isoFormat('MMM D, h:mm:ss');
             }
             $ws->push($userInfo['fd'], json_encode($chat));
         }
