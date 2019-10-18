@@ -246,6 +246,15 @@ class WebsocketServer
     {
         if (empty($message['username'])) {
             $message['username'] = 'guest' . $fd;
+        } else {
+            $user = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,username,token,coin')
+            ->where(['username' => $message['username']])
+            ->find();
+            if (!empty($user)) {
+                $userInfo["user_id"] = $user[0]['id'];
+            }
         }
         $userInfo["fd"] = $fd;
         $userInfo["room"] = $message['room'];
@@ -263,6 +272,15 @@ class WebsocketServer
     {
         if (empty($message['username'])) {
             $message['username'] = 'guest' . $fd;
+        } else {
+            $user = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,username,token,coin')
+            ->where(['username' => $message['username']])
+            ->find();
+            if (!empty($user)) {
+                $userInfo["user_id"] = $user[0]['id'];
+            }
         }
         $userInfo["fd"] = $fd;
         $userInfo["room"] = $message['room'];
