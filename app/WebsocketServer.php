@@ -138,26 +138,36 @@ class WebsocketServer
                 $points = $points + ((int)$cheer['points'] * $counts);
             }
         }
-        $user = Db::init($this->MysqlPool)
+        $streamer = Db::init($this->MysqlPool)
             ->name('users')
             ->field('id,username,token,coin')
             ->where(['token' => $message['room']])
             ->find();
         //print_r($user);
         if ($points > 0) {
-            if ($user[0]['coin'] <= $points) {
-                $message['nocheer'] = true;
-                return $message;
-            }
-            $updateCoin = $user[0]['coin'] - $points;
+            
             $sender = Db::init($this->MysqlPool)
                 ->name('users')
                 ->field('id,username,token,coin')
                 ->where(['username' => $message['username']])
                 ->find();
+
+            if ($sender[0]['coin'] <= $points) {
+                $message['nocheer'] = true;
+                return $message;
+            }
+
+            $updateCoin = (int)$sender[0]['coin'] - $points;
+
             Db::init($this->MysqlPool)
                 ->name('users')->where(['id' => $sender[0]['id']])
                 ->update(['coin' => $updateCoin]);
+
+            //add points to streamer
+            $addCoin = (int)$streamer[0]['coin'] + $points;
+            Db::init($this->MysqlPool)
+                ->name('users')->where(['id' => $streamer[0]['id']])
+                ->update(['coin' => $addCoin]);
             
             //user top points
             $userTopPoints = Db::init($this->MysqlPool)
@@ -165,14 +175,14 @@ class WebsocketServer
             ->field('id,user_id,streamer_id,points')
             ->where([
                 'user_id' => $sender[0]['id'],
-                'streamer_id' => $user[0]['id']
+                'streamer_id' => $streamer[0]['id']
             ])
             ->find();
             if (empty($userTopPoints[0])) {
                 //insert top Points
                 $topPoints = [
                     'user_id' => $sender[0]['id'],
-                    'streamer_id' => $user[0]['id'],
+                    'streamer_id' => $streamer[0]['id'],
                     'points' => $points,
                     'created' => date("Y-m-d H:i:s"),
                     'modified' => date("Y-m-d H:i:s")
@@ -191,7 +201,7 @@ class WebsocketServer
             //user Points
             $userPoints = [
                 'user_id' => $sender[0]['id'],
-                'send_to' => $user[0]['id'],
+                'send_to' => $streamer[0]['id'],
                 'points' => $points,
                 'created' => date("Y-m-d H:i:s"),
                 'modified' => date("Y-m-d H:i:s")
