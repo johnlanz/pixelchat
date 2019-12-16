@@ -271,6 +271,7 @@ class WebsocketServer
         $userInfo["username"] = $message['username'];
         $userInfo["video"] = 1;
         $userInfo["chat"] = 1;
+        $userInfo["browser_id"] = $message['browser_id'];
 
         $this->createUpdateRoomUserList($userInfo);
         $this->pushAllMessagesToUser($ws, $userInfo);
@@ -297,6 +298,7 @@ class WebsocketServer
         $userInfo["username"] = $message['username'];
         $userInfo["video"] = 1;
         $userInfo["chat"] = 0;
+        $userInfo["browser_id"] = $message['browser_id'];
 
         $chatRoom = Db::init($this->MysqlPool)
             ->name('chatrooms')
@@ -340,6 +342,14 @@ class WebsocketServer
         if (empty($userInfo)) {
             return;
         }
+
+        $browserUsers = Db::init($this->MysqlPool)
+        ->name('chatrooms')
+        ->where(['room'=> $userInfo['room'], 'video' => 1])
+        ->group('browser_id')
+        ->select();
+        $totalUsers = count($browserUsers);
+        
         //print_r($userInfo);
         $roomUsers = Db::init($this->MysqlPool)
         ->name('chatrooms')
@@ -348,7 +358,7 @@ class WebsocketServer
         if (!empty($roomUsers)) {
             $message = [
                 'update_viewers' => true,
-                'live_viewers' => count($roomUsers)
+                'live_viewers' => $totalUsers
             ];
             foreach ($roomUsers as $roomUsers) {
                 $ws->push($roomUsers['fd'], json_encode($message));
@@ -393,7 +403,7 @@ class WebsocketServer
             ->order(['id'=>['id' => 'desc']])
             ->limit(20)
             ->select();
-        //print_r($userInfo);
+        print_r($userInfo);
         
         krsort($chats);
         //print_r($chats);
