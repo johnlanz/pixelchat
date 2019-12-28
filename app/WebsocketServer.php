@@ -118,10 +118,19 @@ class WebsocketServer
             if (!empty($message['created'])) {
                 $message['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $message['created'])->isoFormat('MMM D, h:mm:ss');
             }
+
+            $message['message'] = $this->coloredUsername($message['message']);
+            
             foreach ($roomUsers as $roomUsers) {
                 $ws->push($roomUsers['fd'], json_encode($message));
             }
         }
+    }
+
+    protected function coloredUsername($message)
+    {
+        $message = preg_replace('/(\@\w+)/', '<span class="text-info">$1</span>', $message);
+        return $message;
     }
 
     protected function cheerMessage($message = [])
@@ -412,6 +421,7 @@ class WebsocketServer
             if (!empty($chat['created'])) {
                 $chat['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $chat['created'])->isoFormat('MMM D, h:mm:ss');
             }
+            $chat['message'] = $this->coloredUsername($chat['message']);
             $ws->push($userInfo['fd'], json_encode($chat));
         }
     }
