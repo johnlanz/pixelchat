@@ -107,6 +107,20 @@ class WebsocketServer
             //not allowed to send message
             return;
         }
+        //check if ban user
+        $banUser = Db::init($this->MysqlPool)
+            ->name('chat_bans')
+            ->field('id,room,ban_username')
+            ->where([
+                'ban_username' => $message['username'],
+                'room' => $message['room']
+            ])
+            ->find();
+        if (!empty($banUser)) {
+            //not allowed to send message
+            return;
+        }
+
         $message = $this->cheerMessage($message);
         if (!empty($message['nocheer'])) {
             //not allowed to send message
@@ -122,7 +136,17 @@ class WebsocketServer
             $message['message'] = $this->coloredUsername($message['message']);
             
             foreach ($roomUsers as $roomUsers) {
-                $ws->push($roomUsers['fd'], json_encode($message));
+                $ban = Db::init($this->MysqlPool)
+                    ->name('chat_bans')
+                    ->field('id,room,ban_username')
+                    ->where([
+                        'ban_username' => $roomUsers['username'],
+                        'room' => $message['room']
+                    ])
+                    ->find();
+                if (empty($ban)) {
+                    $ws->push($roomUsers['fd'], json_encode($message));
+                }
             }
         }
     }
@@ -422,7 +446,21 @@ class WebsocketServer
                 $chat['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $chat['created'])->isoFormat('MMM D, h:mm:ss');
             }
             $chat['message'] = $this->coloredUsername($chat['message']);
-            $ws->push($userInfo['fd'], json_encode($chat));
+            $ban = Db::init($this->MysqlPool)
+                ->name('chat_bans')
+                ->field('id,ban_username,room')
+                ->where([
+                    'ban_username' => $chat['username'],
+                    'room' => $userInfo['room']
+                ])
+                ->find();
+            if (!empty($ban)) {
+                print_r("wtf");
+                print_r($ban);
+            }
+            if (empty($ban)) {
+                $ws->push($userInfo['fd'], json_encode($chat));
+            }
         }
     }
 }
