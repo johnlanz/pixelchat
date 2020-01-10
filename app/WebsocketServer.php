@@ -153,7 +153,7 @@ class WebsocketServer
 
     protected function coloredUsername($message)
     {
-        $message = preg_replace('/(\@\w+)/', '<span class="text-info">$1</span>', $message);
+        $message = preg_replace('/(\@([a-zA-Z\'-]+)\w+)/', '<span class="text-info">$1</span>', $message);
         return $message;
     }
 
