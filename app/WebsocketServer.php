@@ -104,6 +104,8 @@ class WebsocketServer
     protected function serverPush(\swoole_websocket_server $ws, $fd, $message = [])
     {
         if (empty($message['username'])) {
+            $message['error_message'] = "Please login to send a message";
+            $ws->push($fd, json_encode($message));
             //not allowed to send message
             return;
         }
@@ -117,12 +119,16 @@ class WebsocketServer
             ])
             ->find();
         if (!empty($banUser)) {
+            $message['error_message'] = "Chat is not available for banned user";
+            $ws->push($fd, json_encode($message));
             //not allowed to send message
             return;
         }
 
         $message = $this->cheerMessage($message);
         if (!empty($message['nocheer'])) {
+            $message['error_message'] = "Cheer data is required";
+            $ws->push($fd, json_encode($message));
             //not allowed to send message
             return;
         }
