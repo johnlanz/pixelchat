@@ -221,7 +221,7 @@ class Query
      * @param array $data
      * @return mixed|string
      */
-    public function insert($data = [])
+    public function insert(&$data = [])
     {
         $this->options['data'] = $data;
 
@@ -230,7 +230,7 @@ class Query
         if (!empty($this->options['fetch_sql'])) {
             return $this->getRealSql($result);
         }
-        return $this->query($result);
+        return $this->query($result, $data);
     }
 
 
@@ -277,7 +277,7 @@ class Query
      * @param $result
      * @return bool
      */
-    public function query($result)
+    public function query($result, &$data = [])
     {
         back:
 
@@ -285,6 +285,9 @@ class Query
 
         if (is_string($result)) {
             $rs = $mysql->query($result);
+            if (!empty($data)) {
+                $data['id'] = $mysql->insert_id;
+            }
             if ($mysql->errno == 2006 or $mysql->errno == 2013) {
                 goto back;
             } else {
@@ -293,10 +296,12 @@ class Query
             }
         } else {
             $stmt = $mysql->prepare($result['sql']);
-
+            
             if ($stmt) {
                 $rs = $stmt->execute($result['sethinkBind']);
-
+                if (!empty($data)) {
+                    $data['id'] = $mysql->insert_id;
+                }
                 $this->MysqlPool->put($mysql);
                 return $rs;
             } elseif ($mysql->errno == 2006 or $mysql->errno == 2013) {

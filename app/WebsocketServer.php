@@ -280,7 +280,7 @@ class WebsocketServer
         }
     }
 
-    protected function saveMessage($message)
+    protected function saveMessage(&$message)
     {
         unset($message['updateCoin']);
         unset($message['nocheer']);
