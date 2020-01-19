@@ -125,6 +125,23 @@ class WebsocketServer
             return;
         }
 
+        if (!empty($message['update_opinion']) && !empty($message['chat_id'])) {
+            $chat = Db::init($this->MysqlPool)
+                ->name('chats')
+                ->where(['id'=> $message['chat_id']])
+                ->find();
+            print_r($chat);
+            if (!empty($chat)) {
+                $message = array_merge($message, $chat[0]);
+                print_r($message);
+                $roomUsers = $this->getAllUsersInRoom($message['room']);
+                foreach ($roomUsers as $roomUsers) {
+                    $ws->push($roomUsers['fd'], json_encode($message));
+                }
+            }
+            return;
+        }
+
         $message = $this->cheerMessage($message);
         if (!empty($message['nocheer'])) {
             $message['error_message'] = "Cheer data is required";
