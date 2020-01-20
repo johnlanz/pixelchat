@@ -142,13 +142,14 @@ class WebsocketServer
             return;
         }
 
-        $message = $this->cheerMessage($message);
+        $message = $this->cheerMessage($ws, $message);
         if (!empty($message['nocheer'])) {
             $message['error_message'] = "Cheer data is required";
             $ws->push($fd, json_encode($message));
             //not allowed to send message
             return;
         }
+
         $roomUsers = $this->getAllUsersInRoom($message['room']);
         $saved = $this->saveMessage($message);
         if (!empty($roomUsers)) {
@@ -180,7 +181,7 @@ class WebsocketServer
         return $message;
     }
 
-    protected function cheerMessage($message = [])
+    protected function cheerMessage(\swoole_websocket_server $ws, $message = [])
     {
         $message['nocheer'] = false;
         $cheers = Db::init($this->MysqlPool)
@@ -211,6 +212,16 @@ class WebsocketServer
             if ($sender[0]['coin'] <= $points) {
                 $message['nocheer'] = true;
                 return $message;
+            }
+
+            //send an info message about spent goo
+            $spentMessage = $message;
+            $spentMessage['message'] = $sender[0]['username'].' sent '.$points . ' goo!';
+            $spentMessage['message_type'] = "notification_goo_spent";
+            $this->saveMessage($spentMessage);
+            $roomUsers = $this->getAllUsersInRoom($spentMessage['room']);
+            foreach ($roomUsers as $roomUsers) {
+                $ws->push($roomUsers['fd'], json_encode($spentMessage));
             }
 
             $updateCoin = (int)$sender[0]['coin'] - $points;
@@ -457,7 +468,7 @@ class WebsocketServer
             ->name('chats')
             ->where(['room'=> $userInfo['room']])
             ->order(['id'=>['id' => 'desc']])
-            ->limit(20)
+            ->limit(30)
             ->select();
         print_r($userInfo);
         
