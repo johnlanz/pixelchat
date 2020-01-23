@@ -106,6 +106,10 @@ class WebsocketServer
 
     protected function serverPush(\swoole_websocket_server $ws, $fd, $message = [])
     {
+        if (!empty($message['ping'])) {
+            $ws->push($fd, json_encode($message));
+            return;
+        }
         if (empty($message['username'])) {
             $message['error_message'] = "Please login to send a message";
             $ws->push($fd, json_encode($message));
