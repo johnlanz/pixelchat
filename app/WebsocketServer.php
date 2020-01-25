@@ -368,6 +368,7 @@ class WebsocketServer
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
+        $originalMessage['id'] = $message['id'];
         return $originalMessage;
     }
 
