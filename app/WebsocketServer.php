@@ -101,7 +101,7 @@ class WebsocketServer
         } else {
             throw new Exception("Received data is incomplete");
         }
-        echo "receive from {$frame->fd}:{$frame->data},opcode:{$frame->opcode},fin:{$frame->finish}\n";
+        //echo "receive from {$frame->fd}:{$frame->data},opcode:{$frame->opcode},fin:{$frame->finish}\n";
     }
 
     protected function serverPush(\swoole_websocket_server $ws, $fd, $message = [])
@@ -129,6 +129,12 @@ class WebsocketServer
             $message['error_message'] = "Chat is not available for banned user";
             $ws->push($fd, json_encode($message));
             //not allowed to send message
+            return;
+        }
+
+        $message = $this->checkCommandMessage($message);
+        if (!empty($message['command'])) {
+            $ws->push($fd, json_encode($message));
             return;
         }
 
@@ -216,6 +222,30 @@ class WebsocketServer
     protected function coloredUsername($message)
     {
         $message = preg_replace('/(\@([a-zA-Z\'-]+)\w+)/', '<span class="text-info">$1</span>', $message);
+        return $message;
+    }
+
+    protected function checkCommandMessage($message = [])
+    {
+        $streamer = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,username,token,coin')
+            ->where(['token' => $message['room']])
+            ->find();
+
+        $command = Db::init($this->MysqlPool)
+            ->name('chat_commands')
+            ->field('id,command,output,user_id')
+            ->where([
+                'user_id' => $streamer[0]['id'],
+                'command' => $message['message']
+            ])
+            ->find();
+        if (!empty($command)) {
+            $message['message'] = $command[0]['output'];
+            $message['command'] = true;
+            $message['message_type'] = 'command';
+        }
         return $message;
     }
 
