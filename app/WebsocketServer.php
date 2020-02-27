@@ -160,7 +160,9 @@ class WebsocketServer
             $message = $this->cheerMessage($message['points'], $message);
             print_r($message);
             if (!empty($message['nocheer'])) {
-                $message['error_message'] = "Cheer data is required";
+                if (empty($message['error_message'])) {
+                    $message['error_message'] = "Cheer data is required";
+                }
                 $ws->push($fd, json_encode($message));
                 //not allowed to send message
                 return;
@@ -188,7 +190,9 @@ class WebsocketServer
         }
         $message = $this->cheerMessage($points, $message);
         if (!empty($message['nocheer'])) {
-            $message['error_message'] = "Cheer data is required";
+            if (empty($message['error_message'])) {
+                $message['error_message'] = "Cheer data is required";
+            }
             $ws->push($fd, json_encode($message));
             //not allowed to send message
             return;
@@ -267,6 +271,11 @@ class WebsocketServer
                 ->where(['username' => $message['username']])
                 ->find();
 
+            if ($sender[0]['id'] == $streamer[0]['id']) {
+                $message['nocheer'] = true;
+                $message['error_message'] = "you can't send goo to yourself!";
+                return $message;
+            }
             if ($sender[0]['coin'] <= $points) {
                 $message['nocheer'] = true;
                 return $message;
