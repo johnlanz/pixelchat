@@ -197,7 +197,7 @@ class WebsocketServer
             //not allowed to send message
             return;
         }
-
+        
         $roomUsers = $this->getAllUsersInRoom($message['room']);
         $message = $this->saveMessage($message);
         if (!empty($roomUsers)) {
@@ -272,8 +272,7 @@ class WebsocketServer
                 ->find();
 
             if ($sender[0]['id'] == $streamer[0]['id']) {
-                $message['nocheer'] = true;
-                $message['error_message'] = "you can't send goo to yourself!";
+                $message['updateCoin'] = (int)$sender[0]['coin'];
                 return $message;
             }
             if ($sender[0]['coin'] <= $points) {
@@ -374,6 +373,7 @@ class WebsocketServer
         unset($message['type']);
         unset($message['points']);
         unset($message['sendTip']);
+        unset($message['error_message']);
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
