@@ -95,6 +95,9 @@ class WebsocketServer
                     case "message":
                         $this->serverPush($ws, $frame->fd, $message);
                         break;
+                    case "get_history":
+                        $this->getHistoryMessages($ws, $frame->fd, $message);
+                        break;
                     default:
                 }
             }
@@ -219,6 +222,46 @@ class WebsocketServer
                 if (empty($ban)) {
                     $ws->push($roomUsers['fd'], json_encode($message));
                 }
+            }
+        }
+    }
+
+    protected function getHistoryMessages(\swoole_websocket_server $ws, $fd, $message = [])
+    {
+       $chats = Db::init($this->MysqlPool)
+            ->name('chats')
+            ->where([
+                'room'=> $message['room'],
+                'id' => ['<', $message['message_id']]
+            ])
+            ->order(['id'=>['id' => 'desc']])
+            ->limit(30)
+            ->select();
+        print_r($message);
+        
+        //krsort($chats);
+        //print_r($chats);
+
+        foreach ($chats as $chat) {
+            if (!empty($chat['created'])) {
+                $chat['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $chat['created'])->isoFormat('MMM D, h:mm:ss');
+            }
+            $chat['type'] = "get_history";
+            $chat['message'] = $this->coloredUsername($chat['message']);
+            $ban = Db::init($this->MysqlPool)
+                ->name('chat_bans')
+                ->field('id,ban_username,room')
+                ->where([
+                    'ban_username' => $chat['username'],
+                    'room' => $message['room']
+                ])
+                ->find();
+            if (!empty($ban)) {
+                print_r("wtf");
+                print_r($ban);
+            }
+            if (empty($ban)) {
+                $ws->push($fd, json_encode($chat));
             }
         }
     }
