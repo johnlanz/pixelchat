@@ -137,7 +137,13 @@ class WebsocketServer
 
         $message = $this->checkCommandMessage($message);
         if (!empty($message['command'])) {
-            $ws->push($fd, json_encode($message));
+            $original = $message['original'];
+            unset($message['original']);
+            $roomUsers = $this->getAllUsersInRoom($message['room']);
+            foreach ($roomUsers as $roomUsers) {
+                $ws->push($roomUsers['fd'], json_encode($original));
+                $ws->push($roomUsers['fd'], json_encode($message));
+            }
             return;
         }
 
@@ -289,9 +295,11 @@ class WebsocketServer
             ])
             ->find();
         if (!empty($command)) {
+            $message['original'] = $message;
             $message['message'] = $command[0]['output'];
             $message['command'] = true;
             $message['message_type'] = 'command';
+            //print_r($message);
         }
         return $message;
     }
@@ -507,6 +515,21 @@ class WebsocketServer
             ->delete();
 
         $this->numberOfUsers($ws, $fd, 'subtract', $userInfo);
+    }
+
+    protected function removeUserFromChatRoom($fd)
+    {
+        $chatrooms = Db::init($this->MysqlPool)
+            ->name('chatrooms')
+            ->where(['fd'=> $fd])
+            ->find();
+        $userInfo = $chatrooms[0];
+        
+        echo "Logout/Delete FD: {$fd}\n";
+        Db::init($this->MysqlPool)
+            ->name('chatrooms')
+            ->where(['fd'=> $fd])
+            ->delete();
     }
 
     protected function numberOfUsers($ws, $fd, $method = 'add', $userInfo = [])
