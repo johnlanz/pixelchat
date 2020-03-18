@@ -142,9 +142,9 @@ class WebsocketServer
             $roomUsers = $this->getAllUsersInRoom($message['room']);
             foreach ($roomUsers as $roomUsers) {
                 $ws->push($roomUsers['fd'], json_encode($original));
-                $ws->push($roomUsers['fd'], json_encode($message));
             }
-            return;
+            $original = $this->saveMessage($original);
+            //return;
         }
 
         if (!empty($message['update_opinion']) && !empty($message['chat_id'])) {
@@ -295,8 +295,11 @@ class WebsocketServer
             ])
             ->find();
         if (!empty($command)) {
+            $string = $command[0]['output'];
+            $url = '@(http(s)?)?(://)?(([a-zA-Z])([-\w]+\.)+([^\s\.]+[^\s]*)+[^,.\s])@';
+            $string = preg_replace($url, '<a href="http$2://$4" target="_blank" title="$0">$0</a>', $string);
             $message['original'] = $message;
-            $message['message'] = $command[0]['output'];
+            $message['message'] = $string;
             $message['command'] = true;
             $message['message_type'] = 'command';
             //print_r($message);
@@ -425,6 +428,7 @@ class WebsocketServer
         unset($message['points']);
         unset($message['sendTip']);
         unset($message['error_message']);
+        unset($message['command']);
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
