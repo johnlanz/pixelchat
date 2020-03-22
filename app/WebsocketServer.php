@@ -135,6 +135,15 @@ class WebsocketServer
             return;
         }
 
+        //delete message
+        if (!empty($message['delete'])) {
+            $roomUsers = $this->getAllUsersInRoom($message['room']);
+            foreach ($roomUsers as $roomUsers) {
+                $ws->push($roomUsers['fd'], json_encode($message));
+            }
+            return;
+        }
+
         $message = $this->checkCommandMessage($message);
         if (!empty($message['command'])) {
             $original = $message['original'];
