@@ -176,7 +176,8 @@ class WebsocketServer
         if (!empty($message['sendTip'])) {
             //send an info message about spent goo
             $message = $this->cheerMessage($message['points'], $message);
-            print_r($message);
+            //print_r("sendTip");
+            //print_r($message);
             if (!empty($message['nocheer'])) {
                 if (empty($message['error_message'])) {
                     $message['error_message'] = "Not enough goo";
@@ -211,7 +212,8 @@ class WebsocketServer
             }
         }
         $message = $this->cheerMessage($points, $message);
-        print_r($message);
+        //print_r("cheerMessage");
+        //print_r($message);
         if (!empty($message['nocheer'])) {
             if (empty($message['error_message'])) {
                 $message['error_message'] = "Not enough goo";
@@ -353,10 +355,13 @@ class WebsocketServer
 
             if ($sender[0]['id'] == $streamer[0]['id']) {
                 $message['updateCoin'] = (int)$sender[0]['coin'];
+                $message['nocheer'] = true;
                 return $message;
             }
+            //print_r($points ." > " . $sender[0]['coin']);
             if ($points > $sender[0]['coin']) {
                 $message['nocheer'] = true;
+                $message['sss'] = "wtf";
                 return $message;
             }
 
