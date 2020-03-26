@@ -361,7 +361,6 @@ class WebsocketServer
             //print_r($points ." > " . $sender[0]['coin']);
             if ($points > $sender[0]['coin']) {
                 $message['nocheer'] = true;
-                $message['sss'] = "wtf";
                 return $message;
             }
 
