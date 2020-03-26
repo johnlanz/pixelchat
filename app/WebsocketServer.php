@@ -179,7 +179,7 @@ class WebsocketServer
             print_r($message);
             if (!empty($message['nocheer'])) {
                 if (empty($message['error_message'])) {
-                    $message['error_message'] = "Cheer data is required";
+                    $message['error_message'] = "Not enough goo";
                 }
                 $ws->push($fd, json_encode($message));
                 //not allowed to send message
@@ -214,7 +214,7 @@ class WebsocketServer
         print_r($message);
         if (!empty($message['nocheer'])) {
             if (empty($message['error_message'])) {
-                $message['error_message'] = "Cheer data is required";
+                $message['error_message'] = "Not enough goo";
             }
             $ws->push($fd, json_encode($message));
             //not allowed to send message
@@ -355,7 +355,7 @@ class WebsocketServer
                 $message['updateCoin'] = (int)$sender[0]['coin'];
                 return $message;
             }
-            if ($sender[0]['coin'] <= $points) {
+            if ($points > $sender[0]['coin']) {
                 $message['nocheer'] = true;
                 return $message;
             }
