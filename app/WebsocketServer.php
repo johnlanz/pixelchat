@@ -185,7 +185,11 @@ class WebsocketServer
                 //not allowed to send message
                 return;
             }
-            $message['message'] = $message['username'].' sent '. $message['points'] . ' goo!';
+            $tipMessage = $message['username'].' sent '. $message['points'] . ' goo!';
+            if (!empty($message['message'])) {
+                $tipMessage .= '<br />"' . $message['message'] . '"';
+            }
+            $message['message'] = $tipMessage;
             $message['message_type'] = "notification_goo_spent";
             $message = $this->saveMessage($message);
             $roomUsers = $this->getAllUsersInRoom($message['room']);
@@ -207,6 +211,7 @@ class WebsocketServer
             }
         }
         $message = $this->cheerMessage($points, $message);
+        print_r($message);
         if (!empty($message['nocheer'])) {
             if (empty($message['error_message'])) {
                 $message['error_message'] = "Cheer data is required";
@@ -237,6 +242,18 @@ class WebsocketServer
                 if (empty($ban)) {
                     $ws->push($roomUsers['fd'], json_encode($message));
                 }
+            }
+        }
+
+        //send cheer notification
+        if (!empty($message['sendCheer'])) {
+            $cheerMessage = $message;
+            $cheerMessage['message'] = $cheerMessage['username'].' sent '. $points . ' goo!';
+            $cheerMessage['message_type'] = "notification_goo_spent";
+            $cheerMessage = $this->saveMessage($cheerMessage);
+            $roomUsers = $this->getAllUsersInRoom($cheerMessage['room']);
+            foreach ($roomUsers as $roomUsers) {
+                $ws->push($roomUsers['fd'], json_encode($cheerMessage));
             }
         }
     }
@@ -396,6 +413,7 @@ class WebsocketServer
             ->name('user_points')
             ->insert($userPoints);
             $message['updateCoin'] = $updateCoin;
+            $message['sendCheer'] = true;
         }
         return $message;
     }
@@ -438,6 +456,7 @@ class WebsocketServer
         unset($message['sendTip']);
         unset($message['error_message']);
         unset($message['command']);
+        unset($message['sendCheer']);
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
