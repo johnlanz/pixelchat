@@ -186,16 +186,19 @@ class WebsocketServer
                 //not allowed to send message
                 return;
             }
-            if ($message['anonymous']) {
-                $tipMessage = 'anonymous sent '. $message['points'] . ' goo!';
+            $user = ($message['anonymous'])? "anonymous" : $message['username'];
+            if (!empty($message['gooOrderMessage'])) {
+                $tipMessage = $user.' just ordered for '. $message['points'] . ' goo';
+                $tipMessage .= '<br />"<span class="fa fa-star star-checked"></span> <em>' . $message['gooOrderMessage'] . '</em>"';
+                $message['message_type'] = "notification_goo_order";
             } else {
-                $tipMessage = $message['username'].' sent '. $message['points'] . ' goo!';
+                $tipMessage = $user.' sent '. $message['points'] . ' goo!';
+                $message['message_type'] = "notification_goo_spent";
             }
             if (!empty($message['message'])) {
-                $tipMessage .= '<br />"' . $message['message'] . '"';
+                $tipMessage .= '<br />"<em>' . $message['message'] . '</em>"';
             }
             $message['message'] = $tipMessage;
-            $message['message_type'] = "notification_goo_spent";
             $message = $this->saveMessage($message);
             $roomUsers = $this->getAllUsersInRoom($message['room']);
             foreach ($roomUsers as $roomUsers) {
@@ -466,6 +469,7 @@ class WebsocketServer
         unset($message['command']);
         unset($message['sendCheer']);
         unset($message['anonymous']);
+        unset($message['gooOrderMessage']);
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
