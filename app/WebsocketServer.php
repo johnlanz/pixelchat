@@ -186,7 +186,11 @@ class WebsocketServer
                 //not allowed to send message
                 return;
             }
-            $tipMessage = $message['username'].' sent '. $message['points'] . ' goo!';
+            if ($message['anonymous']) {
+                $tipMessage = 'anonymous sent '. $message['points'] . ' goo!';
+            } else {
+                $tipMessage = $message['username'].' sent '. $message['points'] . ' goo!';
+            }
             if (!empty($message['message'])) {
                 $tipMessage .= '<br />"' . $message['message'] . '"';
             }
@@ -461,6 +465,7 @@ class WebsocketServer
         unset($message['error_message']);
         unset($message['command']);
         unset($message['sendCheer']);
+        unset($message['anonymous']);
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
