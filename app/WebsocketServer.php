@@ -189,7 +189,7 @@ class WebsocketServer
             $user = ($message['anonymous'])? "anonymous" : $message['username'];
             if (!empty($message['gooOrderMessage'])) {
                 $tipMessage = $user.' just ordered for '. $message['points'] . ' goo';
-                $tipMessage .= '<br />"<span class="fa fa-star star-checked"></span> <em>' . $message['gooOrderMessage'] . '</em>"';
+                $tipMessage .= '<br />"<span class="fa fa-star star-checked"></span> <strong><em>' . $message['gooOrderMessage'] . '</em></strong>"';
                 $message['message_type'] = "notification_goo_order";
             } else {
                 $tipMessage = $user.' sent '. $message['points'] . ' goo!';
