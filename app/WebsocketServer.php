@@ -231,6 +231,7 @@ class WebsocketServer
         }
         
         $roomUsers = $this->getAllUsersInRoom($message['room']);
+        $cheerMessage = $message;
         $message = $this->saveMessage($message);
         if (!empty($roomUsers)) {
             if (!empty($message['created'])) {
@@ -256,7 +257,6 @@ class WebsocketServer
 
         //send cheer notification
         if (!empty($message['sendCheer'])) {
-            $cheerMessage = $message;
             $cheerMessage['message'] = $cheerMessage['username'].' sent '. $points . ' goo!';
             $cheerMessage['message_type'] = "notification_goo_spent";
             $cheerMessage = $this->saveMessage($cheerMessage);
