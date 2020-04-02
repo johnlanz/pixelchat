@@ -188,11 +188,11 @@ class WebsocketServer
             }
             $user = ($message['anonymous'])? "anonymous" : $message['username'];
             if (!empty($message['gooOrderMessage'])) {
-                $tipMessage = $user.' just ordered for '. $message['points'] . ' goo';
+                $tipMessage = $user.' just ordered for <strong>'. $message['points'] . ' goo</strong>';
                 $tipMessage .= '<br />"<span class="fa fa-star star-checked"></span> <strong><em>' . $message['gooOrderMessage'] . '</em></strong>"';
                 $message['message_type'] = "notification_goo_order";
             } else {
-                $tipMessage = $user.' sent '. $message['points'] . ' goo!';
+                $tipMessage = $user.' sent <strong>'. $message['points'] . ' goo!</strong>';
                 $message['message_type'] = "notification_goo_spent";
             }
             if (!empty($message['message'])) {
@@ -257,7 +257,7 @@ class WebsocketServer
 
         //send cheer notification
         if (!empty($message['sendCheer'])) {
-            $cheerMessage['message'] = $cheerMessage['username'].' sent '. $points . ' goo!';
+            $cheerMessage['message'] = $cheerMessage['username'].' sent <strong>'. $points . ' goo!</strong>';
             $cheerMessage['message_type'] = "notification_goo_spent";
             $cheerMessage = $this->saveMessage($cheerMessage);
             $roomUsers = $this->getAllUsersInRoom($cheerMessage['room']);
