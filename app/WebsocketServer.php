@@ -283,6 +283,7 @@ class WebsocketServer
             $cheerMessage['message_type'] = "notification_goo_spent";
             $cheerMessage = $this->saveMessage($cheerMessage);
             $roomUsers = $this->getAllUsersInRoom($cheerMessage['room']);
+            unset($cheerMessage['updateCoin']);
             foreach ($roomUsers as $roomUsers) {
                 $ws->push($roomUsers['fd'], json_encode($cheerMessage));
             }
