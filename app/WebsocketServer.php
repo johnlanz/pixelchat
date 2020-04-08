@@ -509,6 +509,8 @@ class WebsocketServer
     {
         if (empty($message['username'])) {
             $message['username'] = 'guest' . $fd;
+        } elseif (!empty($message['guest'])) {
+            
         } else {
             $user = Db::init($this->MysqlPool)
             ->name('users')
