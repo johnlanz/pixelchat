@@ -119,6 +119,28 @@ class WebsocketServer
             //not allowed to send message
             return;
         }
+        if (!empty($message['guest'])) {
+            $chatGuest = Db::init($this->MysqlPool)
+                ->name('chat_user_guests')
+                ->where(['name'=> $message['username']])
+                ->find();
+            if (!empty($chatGuest)) {
+                $chatUser = Db::init($this->MysqlPool)
+                    ->name('chat_users')
+                    ->where(['id'=> $chatGuest[0]['chat_user_id']])
+                    ->find();
+                $totalSentMessage = (int)$chatGuest[0]['sent_messages'] + 1;
+                $numMessage = (int)$chatUser[0]['number_of_message'];
+                if ($totalSentMessage > $numMessage) {
+                    $message['error_message'] = "Message limit reached. Please login to send a message";
+                    $ws->push($fd, json_encode($message));
+                    return;
+                }
+                Db::init($this->MysqlPool)
+                ->name('chat_user_guests')->where(['id' => $chatGuest[0]['id']])
+                ->update(['sent_messages' => $totalSentMessage]);
+            }
+        }
         //check if ban user
         $banUser = Db::init($this->MysqlPool)
             ->name('chat_bans')
@@ -353,7 +375,11 @@ class WebsocketServer
             ->find();
         //print_r($user);
         if ($points > 0) {
-            
+            if ($message['guest']) {
+                $message['nocheer'] = true;
+                $message['error_message'] = "Please login to send goo";
+                return $message;
+            }
             $sender = Db::init($this->MysqlPool)
                 ->name('users')
                 ->field('id,username,token,coin')
@@ -470,6 +496,7 @@ class WebsocketServer
         unset($message['sendCheer']);
         unset($message['anonymous']);
         unset($message['gooOrderMessage']);
+        unset($message['guest']);
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
