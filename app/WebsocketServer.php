@@ -119,6 +119,12 @@ class WebsocketServer
             //not allowed to send message
             return;
         }
+
+        //follow notication
+        if (!empty($message['followNotification'])) {
+            $message['message'] = '<strong>' . $message['username']. '</strong> now follows <strong>'. $message['streamer'] .'</strong>!';
+        }
+
         if (!empty($message['guest'])) {
             $chatGuest = Db::init($this->MysqlPool)
                 ->name('chat_user_guests')
@@ -498,6 +504,8 @@ class WebsocketServer
         unset($message['anonymous']);
         unset($message['gooOrderMessage']);
         unset($message['guest']);
+        unset($message['streamer']);
+        unset($message['followNotification']);
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
