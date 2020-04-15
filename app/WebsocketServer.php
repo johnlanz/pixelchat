@@ -395,6 +395,9 @@ class WebsocketServer
 
             $senderTotalCoin = (int)$sender[0]['coin'] + (int)$sender[0]['consumable_coin'];
             $streamerTotalCoin = (int)$streamer[0]['coin'] + (int)$streamer[0]['consumable_coin'];
+            print_r("total sender coin: " . $senderTotalCoin);
+            print_r("total streamer coin: " . $streamerTotalCoin);
+
 
             if ($sender[0]['id'] == $streamer[0]['id']) {
                 $message['updateCoin'] = $senderTotalCoin;
