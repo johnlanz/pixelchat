@@ -377,7 +377,7 @@ class WebsocketServer
         
         $streamer = Db::init($this->MysqlPool)
             ->name('users')
-            ->field('id,username,token,coin')
+            ->field('id,username,token,coin,consumable_coin')
             ->where(['token' => $message['room']])
             ->find();
         //print_r($user);
@@ -389,26 +389,43 @@ class WebsocketServer
             }
             $sender = Db::init($this->MysqlPool)
                 ->name('users')
-                ->field('id,username,token,coin')
+                ->field('id,username,token,coin,consumable_coin')
                 ->where(['username' => $message['username']])
                 ->find();
 
+            $senderTotalCoin = (int)$sender[0]['coin'] + (int)$sender[0]['consumable_coin'];
+            $streamerTotalCoin = (int)$streamer[0]['coin'] + (int)$streamer[0]['consumable_coin'];
+
             if ($sender[0]['id'] == $streamer[0]['id']) {
-                $message['updateCoin'] = (int)$sender[0]['coin'];
+                $message['updateCoin'] = $senderTotalCoin;
                 $message['nocheer'] = true;
                 return $message;
             }
+            
             //print_r($points ." > " . $sender[0]['coin']);
-            if ($points > $sender[0]['coin']) {
+            if ($points > $senderTotalCoin) {
                 $message['nocheer'] = true;
                 return $message;
             }
 
-            $updateCoin = (int)$sender[0]['coin'] - $points;
-
-            Db::init($this->MysqlPool)
-                ->name('users')->where(['id' => $sender[0]['id']])
-                ->update(['coin' => $updateCoin]);
+            //substract points to sender
+            if ((int)$sender[0]['consumable_coin'] > 0) {
+                $updateConsumableCoin = (int)$sender[0]['consumable_coin'] - $points;
+                $updateCoin = (int)$sender[0]['coin'];
+                if ($updateConsumableCoin < 0) {
+                    $updateCoin = (int)$sender[0]['coin'] + $updateConsumableCoin;
+                    $updateConsumableCoin = 0;
+                }
+                Db::init($this->MysqlPool)
+                    ->name('users')->where(['id' => $sender[0]['id']])
+                    ->update(['coin' => $updateCoin, 'consumable_coin' => $updateConsumableCoin]);
+                $updateCoin = $updateCoin + $updateConsumableCoin;
+            } else {
+                $updateCoin = (int)$sender[0]['coin'] - $points;
+                Db::init($this->MysqlPool)
+                    ->name('users')->where(['id' => $sender[0]['id']])
+                    ->update(['coin' => $updateCoin]);
+            }
 
             //add points to streamer
             $addCoin = (int)$streamer[0]['coin'] + $points;
