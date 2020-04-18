@@ -79,7 +79,7 @@ class WebsocketServer
     protected function onMessage(\swoole_websocket_server $ws, $frame)
     {
         if (!empty($frame) && $frame->opcode == 1 && $frame->finish == 1) {
-            date_default_timezone_set('America/Denver');
+            date_default_timezone_set('America/Chicago');
             $message = $this->checkMessage($frame->data);
             if (!$message) {
                 //unallowed message
