@@ -4,6 +4,7 @@ namespace App;
 use sethink\swooleOrm\Db;
 use sethink\swooleOrm\MysqlPool;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 class WebsocketServer
 {
@@ -99,6 +100,9 @@ class WebsocketServer
                     case "get_history":
                         $this->getHistoryMessages($ws, $frame->fd, $message);
                         break;
+                    case "get_live_stream":
+                        $this->getLiveStream($ws, $frame->fd, $message);
+                        break;
                     default:
                 }
             }
@@ -106,6 +110,11 @@ class WebsocketServer
             throw new Exception("Received data is incomplete");
         }
         //echo "receive from {$frame->fd}:{$frame->data},opcode:{$frame->opcode},fin:{$frame->finish}\n";
+    }
+
+    protected function getLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
+    {
+        print_r($message);
     }
 
     protected function serverPush(\swoole_websocket_server $ws, $fd, $message = [])
@@ -378,7 +387,7 @@ class WebsocketServer
         
         $streamer = Db::init($this->MysqlPool)
             ->name('users')
-            ->field('id,username,token,coin,consumable_coin')
+            ->field('id,username,token,coin,consumable_coin,streamer_goo_goals')
             ->where(['token' => $message['room']])
             ->find();
         //print_r($user);
@@ -479,6 +488,33 @@ class WebsocketServer
             ->insert($userPoints);
             $message['updateCoin'] = $updateCoin;
             $message['sendCheer'] = true;
+
+            $goals = (int)$streamer[0]['streamer_goo_goals'];
+            if ($goals > 0) {
+                $searchDate = CarbonImmutable::now();
+                $startDate = $searchDate->startOfWeek(Carbon::SATURDAY)->format('Y-m-d H:i:s');
+                $endDate = date("Y-m-d H:i:s");
+                $getUserPoints = Db::init($this->MysqlPool)
+                ->name('user_points')
+                ->where([
+                    'send_to' => $streamer[0]['id'],
+                    'created' => ['>=', $startDate]
+                ])
+                ->select();
+                $raised = 0;
+                foreach ($getUserPoints as $userPoint) {
+                    $raised += (int)$userPoint['points'];
+                }
+                $raisedPercent = ($raised / $goals) * 100;
+                if ($raisedPercent < 30) {
+                    $raisedPercent = 30;
+                }
+                $message['gooRaised'] = [
+                    'raised' => $raised,
+                    'goals' => $goals,
+                    'percentage' => $raisedPercent
+                ];
+            }
         }
         return $message;
     }
@@ -527,6 +563,7 @@ class WebsocketServer
         unset($message['guest']);
         unset($message['streamer']);
         unset($message['followNotification']);
+        unset($message['gooRaised']);
         Db::init($this->MysqlPool)
             ->name('chats')
             ->insert($message);
@@ -610,6 +647,9 @@ class WebsocketServer
             ->name('chatrooms')
             ->where(['fd'=> $fd])
             ->find();
+
+        if (empty($chatrooms)) return;
+        
         $userInfo = $chatrooms[0];
         
         echo "Logout/Delete FD: {$fd}\n";
