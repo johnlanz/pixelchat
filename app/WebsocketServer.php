@@ -498,7 +498,7 @@ class WebsocketServer
                 ->name('user_points')
                 ->where([
                     'send_to' => $streamer[0]['id'],
-                    'created' => ['>=', $startDate]
+                    'reset' => 0
                 ])
                 ->select();
                 $raised = 0;
@@ -508,6 +508,8 @@ class WebsocketServer
                 $raisedPercent = ($raised / $goals) * 100;
                 if ($raisedPercent < 30) {
                     $raisedPercent = 30;
+                } elseif ($raisedPercent > 100) {
+                    $raisedPercent = 100;
                 }
                 $message['gooRaised'] = [
                     'raised' => $raised,

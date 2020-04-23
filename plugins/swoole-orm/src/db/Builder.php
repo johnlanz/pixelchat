@@ -261,6 +261,7 @@ class Builder
             case '<=':
             case 'LIKE':
             case 'NOT LIKE':
+            case 'IS':
                 return $this->parseCompare($k, $v);
                 break;
             case 'IN':
