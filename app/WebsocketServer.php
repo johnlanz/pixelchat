@@ -114,6 +114,7 @@ class WebsocketServer
 
     protected function getLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
     {
+        print_r($message);
         $liveStreams = Db::init($this->MysqlPool)
         ->name('streams')
         ->field('id,name,audience,created,stream_title,user_id')
