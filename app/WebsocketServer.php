@@ -114,7 +114,38 @@ class WebsocketServer
 
     protected function getLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
     {
-        print_r($message);
+        $liveStreams = Db::init($this->MysqlPool)
+        ->name('streams')
+        ->field('id,name,audience,created,stream_title,user_id')
+        ->where([
+            'status' => ['IN', ['live', 'live_screenshot']]
+        ])
+        ->select();
+        foreach ($liveStreams as $key => $stream) {
+            $user = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,username')
+            ->where([
+                'id' => $stream['user_id']
+            ])
+            ->find();
+            if (!empty($user)) {
+                $liveStreams[$key]['username'] = $user[0]['username'];
+            }
+        }
+        $roomUsers = Db::init($this->MysqlPool)
+        ->name('chatrooms')
+        ->select();
+        if (!empty($roomUsers)) {
+            $message = [
+                'live_stream' => true,
+                'total_live' => count($liveStreams),
+                'streams' => $liveStreams
+            ];
+            foreach ($roomUsers as $roomUsers) {
+                $ws->push($roomUsers['fd'], json_encode($message));
+            }
+        }
     }
 
     protected function serverPush(\swoole_websocket_server $ws, $fd, $message = [])
