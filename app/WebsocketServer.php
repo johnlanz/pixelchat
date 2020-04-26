@@ -115,6 +115,8 @@ class WebsocketServer
     protected function getLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
     {
         print_r($message);
+        $room = $message['room'];
+        $status = $message['status'];
         $liveStreams = Db::init($this->MysqlPool)
         ->name('streams')
         ->field('id,name,audience,created,stream_title,user_id')
@@ -143,6 +145,100 @@ class WebsocketServer
                 'total_live' => count($liveStreams),
                 'streams' => $liveStreams
             ];
+            foreach ($roomUsers as $roomUsers) {
+                $ws->push($roomUsers['fd'], json_encode($message));
+            }
+        }
+
+        if ($room == "defaultRoom") return;
+
+        //push to room user
+        $roomUsers = Db::init($this->MysqlPool)
+        ->name('chatrooms')
+        ->where(['room'=> $room])
+        ->select();
+        if (!empty($roomUsers)) {
+            echo "check roomUsers status: {$status}\n";
+            $stream = [];
+            if ($status == "online") {
+                $stream = Db::init($this->MysqlPool)
+                    ->name('streams')
+                    ->field('id,name,folder,audience,created,stream_title,user_id,use_version,status')
+                    ->where([
+                        'status' => ['IN', ['live', 'live_screenshot']]
+                    ])->find();
+                if (empty($stream)) return;
+                $stream = $stream[0];
+                $user = Db::init($this->MysqlPool)
+                    ->name('users')
+                    ->field('id,username,token,screenshot')
+                    ->where([
+                        'id' => $stream['user_id']
+                    ])->find();
+                if (empty($user)) return;
+                $user = $user[0];
+
+                $videoUrl = '/live/videos/';
+                $streamURL = $videoUrl . $stream['folder'] . '/' . $user['token'] . '.m3u8';
+                $streamType = 'hls';
+                $streamQuality[] = [
+                    'label' => 'Source',
+                    'size' => 'Source',
+                    'src' => $videoUrl . $stream['folder'] . '/' . $user['token'] . '.m3u8',
+                    'type' => 'application/x-mpegURL'
+                ];
+                if ($stream['use_version']) {
+                    $streamQuality[] = [
+                        'label' => '720p@30fps',
+                        'size' => '720p',
+                        'src' => $videoUrl . $stream['folder'] . '_720p/' . $user['token'] . '.m3u8',
+                        'type' => 'application/x-mpegURL'
+                    ];
+                    $streamQuality[] = [
+                        'label' => '480p',
+                        'size' => '480p',
+                        'src' => $videoUrl . $stream['folder'] . '_480p/' . $user['token'] . '.m3u8',
+                        'type' => 'application/x-mpegURL'
+                    ];
+                    $streamQuality[] = [
+                        'label' => '360p',
+                        'size' => '360p',
+                        'src' => $videoUrl . $stream['folder'] . '_360p/' . $user['token'] . '.m3u8',
+                        'type' => 'application/x-mpegURL'
+                    ];
+                }
+                if (!empty($user['screenshot'])) {
+                    $screenshot = '/live/screenshot/' . $user['screenshot'];
+                } else {
+                    $screenshot = '/vidoe/img/s4.png';
+                }
+                $stream = [
+                    'username' => $user['username'],
+                    'user_image' => '/users/image/' . $user['username'],
+                    'title' => $stream['stream_title'],
+                    'room' => $stream['name'],
+                    'url' => '/streams/' . $user['username'],
+                    'streamURL' => $streamURL,
+                    'streamType' => $streamType,
+                    'streamQuality' => $streamQuality,
+                    'screenshot' => $screenshot,
+                    'status' => $stream['status'],
+                    'stream_id' => $stream['id'],
+                    'userid' => $user['id']
+                ];
+                $message = [
+                    'online_live_stream' => true,
+                    'stream' => $stream,
+                    'room' => $room
+                ];
+            } else {
+                $message = [
+                    'offline_live_stream' => true,
+                    'stream' => $stream,
+                    'room' => $room
+                ];
+            }
+
             foreach ($roomUsers as $roomUsers) {
                 $ws->push($roomUsers['fd'], json_encode($message));
             }
