@@ -405,6 +405,7 @@ class WebsocketServer
             }
 
             $message['message'] = $this->coloredUsername($message['message']);
+            $message = $this->getUserColor($message);
             
             foreach ($roomUsers as $roomUsers) {
                 $ban = Db::init($this->MysqlPool)
@@ -456,6 +457,7 @@ class WebsocketServer
             }
             $chat['type'] = "get_history";
             $chat['message'] = $this->coloredUsername($chat['message']);
+            $chat = $this->getUserColor($chat);
             $ban = Db::init($this->MysqlPool)
                 ->name('chat_bans')
                 ->field('id,ban_username,room')
@@ -474,9 +476,27 @@ class WebsocketServer
         }
     }
 
+    /* replace @username with text-info */
     protected function coloredUsername($message)
     {
         $message = preg_replace('/(\@([a-zA-Z\'-]+)\w+)/', '<span class="text-info">$1</span>', $message);
+        return $message;
+    }
+
+    protected function getUserColor($message)
+    {
+        $user = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,username,color')
+            ->where([
+                'username' => $message['username']
+            ])
+            ->find();
+        if (!empty($user)) {
+            if (!empty($user[0]['color'])) {
+                $message['color'] = $user[0]['color'];
+            }
+        }
         return $message;
     }
 
@@ -882,6 +902,7 @@ class WebsocketServer
                 $chat['created'] = Carbon::createFromFormat('Y-m-d H:i:s', $chat['created'])->isoFormat('MMM D, h:mm:ss');
             }
             $chat['message'] = $this->coloredUsername($chat['message']);
+            $chat = $this->getUserColor($chat);
             $ban = Db::init($this->MysqlPool)
                 ->name('chat_bans')
                 ->field('id,ban_username,room')
