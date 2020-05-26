@@ -623,17 +623,33 @@ class WebsocketServer
                 ->update(['points' => $updatePoints]);
             }
             
-            //user Points
+            //user Points receive
             $userPoints = [
                 'user_id' => $sender[0]['id'],
                 'send_to' => $streamer[0]['id'],
                 'points' => $points,
+                'type' => 'receive',
+                'updated_to_new_history' => 1,
                 'created' => date("Y-m-d H:i:s"),
                 'modified' => date("Y-m-d H:i:s")
             ];
             Db::init($this->MysqlPool)
             ->name('user_points')
             ->insert($userPoints);
+            //user Points sent
+            $userPointsSent = [
+                'user_id' => $streamer[0]['id'],
+                'send_to' => $sender[0]['id'],
+                'points' => -$points,
+                'type' => 'sent',
+                'updated_to_new_history' => 1,
+                'created' => date("Y-m-d H:i:s"),
+                'modified' => date("Y-m-d H:i:s")
+            ];
+            Db::init($this->MysqlPool)
+            ->name('user_points')
+            ->insert($userPointsSent);
+            
             $message['updateCoin'] = $updateCoin;
             $message['sendCheer'] = true;
 
