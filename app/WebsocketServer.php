@@ -301,6 +301,22 @@ class WebsocketServer
             return;
         }
 
+        //check if ban user from admin
+        $siteWideBanned = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,banned,username')
+            ->where([
+                'username' => $message['username'],
+                'banned' => 1
+            ])
+            ->find();
+        if (!empty($siteWideBanned)) {
+            //$message['error_message'] = "Chat is not available for banned user";
+            $ws->push($fd, json_encode($message));
+            //not allowed to send message
+            return;
+        }
+
         //delete message
         if (!empty($message['delete'])) {
             $roomUsers = $this->getAllUsersInRoom($message['room']);
