@@ -163,7 +163,7 @@ class WebsocketServer
             if ($status == "online") {
                 $stream = Db::init($this->MysqlPool)
                     ->name('streams')
-                    ->field('id,name,folder,audience,created,stream_title,user_id,use_version,status')
+                    ->field('id,name,folder,audience,created,stream_title,user_id,use_version,status,disable_low_latency,vhost')
                     ->where([
                         'status' => ['IN', ['live', 'live_screenshot']]
                     ])->find();
@@ -171,18 +171,28 @@ class WebsocketServer
                 $stream = $stream[0];
                 $user = Db::init($this->MysqlPool)
                     ->name('users')
-                    ->field('id,username,token,screenshot')
+                    ->field('id,username,token,screenshot,subscribers_count,bio')
                     ->where([
                         'id' => $stream['user_id']
                     ])->find();
                 if (empty($user)) return;
                 $user = $user[0];
 
+                $streamQuality = [];
+                if (in_array($stream['status'], ['live', 'live_screenshot']) && $stream['disable_low_latency'] == 0) {
+                    $streamQuality[] = [
+                        'label' => 'Low Latency',
+                        'size' => 'ftl',
+                        'src' => 'webrtc://'. getenv('webrtc_api') .'/live/' . $stream['name'],
+                        'type' => 'webrtc'
+                    ];
+                }
+
                 $videoUrl = '/live/videos/';
                 $streamURL = $videoUrl . $stream['folder'] . '/' . $user['token'] . '.m3u8';
                 $streamType = 'hls';
                 $streamQuality[] = [
-                    'label' => 'Source',
+                    'label' => 'HLS: Source',
                     'size' => 'Source',
                     'src' => $videoUrl . $stream['folder'] . '/' . $user['token'] . '.m3u8',
                     'type' => 'application/x-mpegURL'
@@ -224,7 +234,13 @@ class WebsocketServer
                     'screenshot' => $screenshot,
                     'status' => $stream['status'],
                     'stream_id' => $stream['id'],
-                    'userid' => $user['id']
+                    'userid' => $user['id'],
+                    'subscribers_count' => $user['subscribers_count'],
+                    'bio' => $user['bio'],
+                    'audience' => $stream['audience'],
+                    'vhost' => $stream['vhost'],
+                    'webrtc_api' => "https://" . getenv('webrtc_api') . "/rtc/v1/play/",
+                    'webrtc_stream_url' => "webrtc://" . getenv('webrtc_api') . "/live/" . $stream['name']
                 ];
                 $message = [
                     'online_live_stream' => true,
