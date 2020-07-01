@@ -107,7 +107,7 @@ class WebsocketServer
                 }
             }
         } else {
-            throw new Exception("Received data is incomplete");
+            echo("Error: Received data is incomplete");
         }
         //echo "receive from {$frame->fd}:{$frame->data},opcode:{$frame->opcode},fin:{$frame->finish}\n";
     }
