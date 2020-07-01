@@ -236,7 +236,6 @@ class WebsocketServer
                     'stream_id' => $stream['id'],
                     'userid' => $user['id'],
                     'subscribers_count' => $user['subscribers_count'],
-                    'bio' => $user['bio'],
                     'audience' => $stream['audience'],
                     'vhost' => $stream['vhost'],
                     'webrtc_api' => "https://" . getenv('webrtc_api') . "/rtc/v1/play/",
