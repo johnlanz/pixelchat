@@ -114,7 +114,7 @@ class WebsocketServer
 
     protected function getLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
     {
-        //print_r($message);
+        print_r($message);
         $room = $message['room'];
         $status = $message['status'];
         $liveStreams = Db::init($this->MysqlPool)
