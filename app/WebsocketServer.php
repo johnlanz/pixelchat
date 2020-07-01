@@ -114,7 +114,7 @@ class WebsocketServer
 
     protected function getLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
     {
-        print_r($message);
+        //print_r($message);
         $room = $message['room'];
         $status = $message['status'];
         $liveStreams = Db::init($this->MysqlPool)
@@ -281,7 +281,9 @@ class WebsocketServer
         if (!empty($message['guest'])) {
             $chatGuest = Db::init($this->MysqlPool)
                 ->name('chat_user_guests')
-                ->where(['name'=> $message['username']])
+                ->where([
+                    'name' => ['LOWER', strtolower($message['username'])]
+                ])
                 ->find();
             if (!empty($chatGuest)) {
                 $chatUser = Db::init($this->MysqlPool)
@@ -305,7 +307,7 @@ class WebsocketServer
             ->name('chat_bans')
             ->field('id,room,ban_username')
             ->where([
-                'ban_username' => $message['username'],
+                'ban_username' => ['LOWER', strtolower($message['username'])],
                 'room' => $message['room']
             ])
             ->find();
@@ -321,7 +323,7 @@ class WebsocketServer
             ->name('users')
             ->field('id,banned,username')
             ->where([
-                'username' => $message['username'],
+                'username' => ['LOWER', strtolower($message['username'])],
                 'banned' => 1
             ])
             ->find();
@@ -358,10 +360,10 @@ class WebsocketServer
                 ->name('chats')
                 ->where(['id'=> $message['chat_id']])
                 ->find();
-            print_r($chat);
+            //print_r($chat);
             if (!empty($chat)) {
                 $message = array_merge($message, $chat[0]);
-                print_r($message);
+                //print_r($message);
                 $roomUsers = $this->getAllUsersInRoom($message['room']);
                 foreach ($roomUsers as $roomUsers) {
                     $ws->push($roomUsers['fd'], json_encode($message));
@@ -443,7 +445,7 @@ class WebsocketServer
                     ->name('chat_bans')
                     ->field('id,room,ban_username')
                     ->where([
-                        'ban_username' => $roomUsers['username'],
+                        'ban_username' => ['LOWER', strtolower($roomUsers['username'])],
                         'room' => $message['room']
                     ])
                     ->find();
@@ -477,7 +479,7 @@ class WebsocketServer
             ->order(['id'=>['id' => 'desc']])
             ->limit(30)
             ->select();
-        print_r($message);
+        //print_r($message);
         
         //krsort($chats);
         //print_r($chats);
@@ -493,13 +495,13 @@ class WebsocketServer
                 ->name('chat_bans')
                 ->field('id,ban_username,room')
                 ->where([
-                    'ban_username' => $chat['username'],
+                    'ban_username' => ['LOWER', strtolower($chat['username'])],
                     'room' => $message['room']
                 ])
                 ->find();
             if (!empty($ban)) {
-                print_r("wtf");
-                print_r($ban);
+                //print_r("wtf");
+                //print_r($ban);
             }
             if (empty($ban)) {
                 $ws->push($fd, json_encode($chat));
@@ -516,13 +518,16 @@ class WebsocketServer
 
     protected function getUserColor($message)
     {
+        //print_r("get User color");
         $user = Db::init($this->MysqlPool)
             ->name('users')
             ->field('id,username,color')
             ->where([
-                'username' => $message['username']
+                'username' => ['LOWER', strtolower($message['username'])]
             ])
             ->find();
+
+        //print_r($user);
         if (!empty($user)) {
             if (!empty($user[0]['color'])) {
                 $message['color'] = $user[0]['color'];
@@ -579,13 +584,15 @@ class WebsocketServer
             $sender = Db::init($this->MysqlPool)
                 ->name('users')
                 ->field('id,username,token,coin,consumable_coin')
-                ->where(['username' => $message['username']])
+                ->where([
+                    'username' => ['LOWER', strtolower($message['username'])]
+                ])
                 ->find();
 
             $senderTotalCoin = (int)$sender[0]['coin'] + (int)$sender[0]['consumable_coin'];
             $streamerTotalCoin = (int)$streamer[0]['coin'] + (int)$streamer[0]['consumable_coin'];
-            print_r("total sender coin: " . $senderTotalCoin);
-            print_r("total streamer coin: " . $streamerTotalCoin);
+            //print_r("total sender coin: " . $senderTotalCoin);
+            //print_r("total streamer coin: " . $streamerTotalCoin);
 
 
             if ($sender[0]['id'] == $streamer[0]['id']) {
@@ -778,7 +785,9 @@ class WebsocketServer
             $user = Db::init($this->MysqlPool)
             ->name('users')
             ->field('id,username,token,coin')
-            ->where(['username' => $message['username']])
+            ->where([
+                'username' => ['LOWER', strtolower($message['username'])]
+            ])
             ->find();
             if (!empty($user)) {
                 $userInfo["user_id"] = $user[0]['id'];
@@ -805,7 +814,9 @@ class WebsocketServer
             $user = Db::init($this->MysqlPool)
             ->name('users')
             ->field('id,username,token,coin')
-            ->where(['username' => $message['username']])
+            ->where([
+                'username' => ['LOWER', strtolower($message['username'])]
+            ])
             ->find();
             if (!empty($user)) {
                 $userInfo["user_id"] = $user[0]['id'];
@@ -939,7 +950,7 @@ class WebsocketServer
             ->order(['id'=>['id' => 'desc']])
             ->limit(30)
             ->select();
-        print_r($userInfo);
+        //print_r($userInfo);
         
         krsort($chats);
         //print_r($chats);
@@ -954,13 +965,13 @@ class WebsocketServer
                 ->name('chat_bans')
                 ->field('id,ban_username,room')
                 ->where([
-                    'ban_username' => $chat['username'],
+                    'ban_username' => ['LOWER', strtolower($chat['username'])],
                     'room' => $userInfo['room']
                 ])
                 ->find();
             if (!empty($ban)) {
-                print_r("wtf");
-                print_r($ban);
+                //print_r("wtf");
+                //print_r($ban);
             }
             if (empty($ban)) {
                 $ws->push($userInfo['fd'], json_encode($chat));

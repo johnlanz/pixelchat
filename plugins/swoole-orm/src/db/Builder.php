@@ -251,8 +251,10 @@ class Builder
     protected function whereExp($k, $v)
     {
         $v[0] = strtoupper($v[0]);
-
         switch ($v[0]) {
+            case 'LOWER':
+                return $this->parseLower($k, $v);
+                break;
             case '=':
             case '<>':
             case '>':
@@ -293,6 +295,12 @@ class Builder
         return empty($whereStr) ? '' : ' WHERE ' . $whereStr;
     }
 
+    protected function parseLower($k, $v)
+    {
+        $whereStr            = "(LOWER(`{$k}`) = ?)";
+        $this->sethinkBind[] = $v[1];
+        return $whereStr;
+    }
 
     protected function parseCompare($k, $v)
     {
