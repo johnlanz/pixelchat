@@ -179,12 +179,17 @@ class WebsocketServer
                 if (empty($user)) return;
                 $user = $user[0];
 
+                $webrtcApi = getenv('webrtc_api');
+                if ($stream['vhost'] == "nj.goohshi.com") {
+                    $webrtcApi = 'rtc-nj.goohshi.com';
+                }
+
                 $streamQuality = [];
                 if (in_array($stream['status'], ['live', 'live_screenshot']) && $stream['disable_low_latency'] == 0) {
                     $streamQuality[] = [
                         'label' => 'Low Latency',
                         'size' => 'ftl',
-                        'src' => 'webrtc://'. getenv('webrtc_api') .'/live/' . $stream['name'],
+                        'src' => 'webrtc://'. $webrtcApi .'/live/' . $stream['name'],
                         'type' => 'webrtc'
                     ];
                 }
@@ -223,6 +228,7 @@ class WebsocketServer
                 } else {
                     $screenshot = '/vidoe/img/s4.png';
                 }
+                
                 $stream = [
                     'username' => $user['username'],
                     'user_image' => '/users/image/' . $user['username'],
@@ -239,8 +245,8 @@ class WebsocketServer
                     'subscribers_count' => $user['subscribers_count'],
                     'audience' => $stream['audience'],
                     'vhost' => $stream['vhost'],
-                    'webrtc_api' => "https://" . getenv('webrtc_api') . "/rtc/v1/play/",
-                    'webrtc_stream_url' => "webrtc://" . getenv('webrtc_api') . "/live/" . $stream['name']
+                    'webrtc_api' => "https://" . $webrtcApi . "/rtc/v1/play/",
+                    'webrtc_stream_url' => "webrtc://" . $webrtcApi . "/live/" . $stream['name']
                 ];
                 $message = [
                     'online_live_stream' => true,
