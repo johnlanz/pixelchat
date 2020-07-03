@@ -78,7 +78,7 @@ class WebsocketServer
             $response->status(101);
             $response->end();
             echo "connected!" . PHP_EOL;
-            echo "ip: ". $request->server['remote_addr'] . PHP_EOL;
+            //echo "ip: ". $request->server['remote_addr'] . PHP_EOL;
             
             return true;
         });
