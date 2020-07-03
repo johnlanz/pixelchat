@@ -47,6 +47,12 @@ class WebsocketServer
         $this->ws->on('handshake', function (\swoole_http_request $request, \swoole_http_response $response) {
             $secWebSocketKey = $request->header['sec-websocket-key'];
             $patten = '#^[+/0-9A-Za-z]{21}[AQgw]==$#';
+
+            //print_r($request->header);
+            if (empty($request->header['sec-websocket-protocol']) || $request->header['sec-websocket-protocol'] != 'token1211') {
+                return false;
+            }
+            echo $request->header['sec-websocket-protocol'] . PHP_EOL;
             
             if (0 === preg_match($patten, $secWebSocketKey) || 16 !== strlen(base64_decode($secWebSocketKey))) {
                 $response->end();
