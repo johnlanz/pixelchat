@@ -247,11 +247,11 @@ class WebsocketServer
                 $videoUrl = "https://{$vhost}/live/";
                 $streamURL = $videoUrl . $stream['name'] . '/' . $user['token'] . '.m3u8';
                 $streamType = 'hls';
-                $streamQuality[] = [
-                    'label' => 'HLS: Source',
-                    'size' => 'Source',
-                    'src' => $videoUrl . $stream['name'] . '/' . $user['token'] . '.m3u8',
-                    'type' => 'application/x-mpegURL'
+                $streamQuality['hls'][] = [
+                    'label' => $defaultResolution,
+                    'size' => $defaultResolution,
+                    'src' => $videoUrl . $stream['name'] . '/' . $stream['name'] . '.m3u8',
+                    'type' => 'hls'
                 ];
                 if ($stream['has_480p']) {
                     $streamQuality['hls'][] = [
