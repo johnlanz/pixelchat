@@ -227,7 +227,7 @@ class WebsocketServer
                 $webrtcApi = getenv('webrtc_api');
                 if ($stream['vhost'] == "nj.goohshi.com") {
                     $webrtcApi = 'rtc-nj.goohshi.com';
-                } else if ($stream['vhost'] == "test2.goohshi.com") {
+                } elseif ($stream['vhost'] == "test2.goohshi.com") {
                     $webrtcApi = 'rtc-test2.goohshi.com';
                 }
 
