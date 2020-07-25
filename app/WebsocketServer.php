@@ -209,7 +209,7 @@ class WebsocketServer
             if ($status == "online") {
                 $stream = Db::init($this->MysqlPool)
                     ->name('streams')
-                    ->field('id,name,folder,audience,created,stream_title,user_id,use_version,status,disable_low_latency,vhost')
+                    ->field('id,name,folder,audience,created,stream_title,user_id,use_version,status,disable_low_latency,vhost,default_resolution')
                     ->where([
                         'status' => ['IN', ['live', 'live_screenshot']]
                     ])->find();
@@ -227,45 +227,46 @@ class WebsocketServer
                 $webrtcApi = getenv('webrtc_api');
                 if ($stream['vhost'] == "nj.goohshi.com") {
                     $webrtcApi = 'rtc-nj.goohshi.com';
+                } else if ($stream['vhost'] == "test2.goohshi.com") {
+                    $webrtcApi = 'rtc-test2.goohshi.com';
                 }
 
                 $streamQuality = [];
+                $defaultResolution = trim($stream['default_resolution']);
+                $defaultResolution = (empty($defaultResolution))? "source" : "{$defaultResolution}p";
                 if (in_array($stream['status'], ['live', 'live_screenshot']) && $stream['disable_low_latency'] == 0) {
                     $streamQuality[] = [
-                        'label' => 'Low Latency',
-                        'size' => 'ftl',
+                        'label' => $defaultResolution,
+                        'size' => $defaultResolution,
                         'src' => 'webrtc://'. $webrtcApi .'/live/' . $stream['name'],
                         'type' => 'webrtc'
                     ];
                 }
-
-                $videoUrl = '/live/videos/';
-                $streamURL = $videoUrl . $stream['folder'] . '/' . $user['token'] . '.m3u8';
+                
+                $vhost = $stream['vhost'];
+                $videoUrl = "https://{$vhost}/live/";
+                $streamURL = $videoUrl . $stream['name'] . '/' . $user['token'] . '.m3u8';
                 $streamType = 'hls';
                 $streamQuality[] = [
                     'label' => 'HLS: Source',
                     'size' => 'Source',
-                    'src' => $videoUrl . $stream['folder'] . '/' . $user['token'] . '.m3u8',
+                    'src' => $videoUrl . $stream['name'] . '/' . $user['token'] . '.m3u8',
                     'type' => 'application/x-mpegURL'
                 ];
-                if ($stream['use_version']) {
-                    $streamQuality[] = [
-                        'label' => '720p@30fps',
-                        'size' => '720p',
-                        'src' => $videoUrl . $stream['folder'] . '_720p/' . $user['token'] . '.m3u8',
-                        'type' => 'application/x-mpegURL'
-                    ];
-                    $streamQuality[] = [
+                if ($stream['has_480p']) {
+                    $streamQuality['hls'][] = [
                         'label' => '480p',
                         'size' => '480p',
-                        'src' => $videoUrl . $stream['folder'] . '_480p/' . $user['token'] . '.m3u8',
-                        'type' => 'application/x-mpegURL'
+                        'src' => $videoUrl . $stream['name'] . '_480p/' . $stream['name'] . '_480p.m3u8',
+                        'type' => 'hls'
                     ];
-                    $streamQuality[] = [
+                }
+                if ($stream['has_360p']) {
+                    $streamQuality['hls'][] = [
                         'label' => '360p',
                         'size' => '360p',
-                        'src' => $videoUrl . $stream['folder'] . '_360p/' . $user['token'] . '.m3u8',
-                        'type' => 'application/x-mpegURL'
+                        'src' => $videoUrl . $stream['name'] . '_360p/' . $stream['name'] . '_360p.m3u8',
+                        'type' => 'hls'
                     ];
                 }
                 if (!empty($user['screenshot'])) {
