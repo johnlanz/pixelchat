@@ -209,8 +209,9 @@ class WebsocketServer
             if ($status == "online") {
                 $stream = Db::init($this->MysqlPool)
                     ->name('streams')
-                    ->field('id,name,folder,audience,created,stream_title,user_id,use_version,status,disable_low_latency,vhost,default_resolution')
+                    ->field('id,name,folder,audience,created,stream_title,user_id,use_version,status,disable_low_latency,vhost,default_resolution,has_480p,has_360p')
                     ->where([
+                        'name' => $room,
                         'status' => ['IN', ['live', 'live_screenshot']]
                     ])->find();
                 if (empty($stream)) return;
@@ -244,15 +245,16 @@ class WebsocketServer
                 }
                 
                 $vhost = $stream['vhost'];
-                $videoUrl = "https://{$vhost}/live/";
-                $streamURL = $videoUrl . $stream['name'] . '/' . $user['token'] . '.m3u8';
+                $videoUrl = "/live/videos/";
+                $streamURL = $videoUrl . $stream['folder'] . '/' . $user['token'] . '.m3u8';
                 $streamType = 'hls';
                 $streamQuality['hls'][] = [
                     'label' => $defaultResolution,
                     'size' => $defaultResolution,
-                    'src' => $videoUrl . $stream['name'] . '/' . $stream['name'] . '.m3u8',
+                    'src' => $videoUrl . $stream['folder'] . '/' . $stream['name'] . '.m3u8',
                     'type' => 'hls'
                 ];
+                $videoUrl = "https://{$vhost}/live/";
                 if ($stream['has_480p']) {
                     $streamQuality['hls'][] = [
                         'label' => '480p',
