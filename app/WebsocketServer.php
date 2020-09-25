@@ -146,7 +146,7 @@ class WebsocketServer
                         $this->getHistoryMessages($ws, $frame->fd, $message);
                         break;
                     case "get_live_stream":
-                        $this->getLiveStream($ws, $frame->fd, $message);
+                        $this->sendLiveStream($ws, $frame->fd, $message);
                         break;
                     default:
                 }
@@ -158,30 +158,12 @@ class WebsocketServer
         //echo "receive from {$frame->fd}:{$frame->data},opcode:{$frame->opcode},fin:{$frame->finish}\n";
     }
 
-    protected function getLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
+    protected function sendLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
     {
         print_r($message);
         $room = $message['room'];
         $status = $message['status'];
-        $liveStreams = Db::init($this->MysqlPool)
-        ->name('streams')
-        ->field('id,name,audience,created,stream_title,user_id')
-        ->where([
-            'status' => ['IN', ['live', 'live_screenshot']]
-        ])
-        ->select();
-        foreach ($liveStreams as $key => $stream) {
-            $user = Db::init($this->MysqlPool)
-            ->name('users')
-            ->field('id,username')
-            ->where([
-                'id' => $stream['user_id']
-            ])
-            ->find();
-            if (!empty($user)) {
-                $liveStreams[$key]['username'] = $user[0]['username'];
-            }
-        }
+        $liveStreams = $this->getLiveStream();
         $roomUsers = Db::init($this->MysqlPool)
         ->name('chatrooms')
         ->select();
@@ -305,7 +287,9 @@ class WebsocketServer
                 $message = [
                     'offline_live_stream' => true,
                     'stream' => $stream,
-                    'room' => $room
+                    'room' => $room,
+                    'total_live' => count($liveStreams),
+                    'live_streams' => $liveStreams
                 ];
             }
 
@@ -313,6 +297,30 @@ class WebsocketServer
                 $ws->push($roomUsers['fd'], json_encode($message));
             }
         }
+    }
+
+    protected function getLiveStream()
+    {
+        $liveStreams = Db::init($this->MysqlPool)
+        ->name('streams')
+        ->field('id,name,audience,created,stream_title,user_id')
+        ->where([
+            'status' => ['IN', ['live', 'live_screenshot']]
+        ])
+        ->select();
+        foreach ($liveStreams as $key => $stream) {
+            $user = Db::init($this->MysqlPool)
+            ->name('users')
+            ->field('id,username')
+            ->where([
+                'id' => $stream['user_id']
+            ])
+            ->find();
+            if (!empty($user)) {
+                $liveStreams[$key]['username'] = $user[0]['username'];
+            }
+        }
+        return $liveStreams;
     }
 
     protected function serverPush(\swoole_websocket_server $ws, $fd, $message = [])
