@@ -704,12 +704,14 @@ class WebsocketServer
                 'streamer_id' => $streamer[0]['id']
             ])
             ->find();
-            if (empty($userTopPoints[0])) {
+            $anonymous = ($message['anonymous'])? 1 : 0;
+            if ($anonymous) {
                 //insert top Points
                 $topPoints = [
                     'user_id' => $sender[0]['id'],
                     'streamer_id' => $streamer[0]['id'],
                     'points' => $points,
+                    'anonymous' => $anonymous,
                     'created' => date("Y-m-d H:i:s"),
                     'modified' => date("Y-m-d H:i:s")
                 ];
@@ -717,16 +719,32 @@ class WebsocketServer
                 ->name('user_top_points')
                 ->insert($topPoints);
             } else {
-                $updatePoints = $userTopPoints[0]['points'] + $points;
-                //update top points
-                Db::init($this->MysqlPool)
-                ->name('user_top_points')->where(['id' => $userTopPoints[0]['id']])
-                ->update(['points' => $updatePoints]);
+                if (empty($userTopPoints[0])) {
+                    //insert top Points
+                    $topPoints = [
+                        'user_id' => $sender[0]['id'],
+                        'streamer_id' => $streamer[0]['id'],
+                        'points' => $points,
+                        'anonymous' => $anonymous,
+                        'created' => date("Y-m-d H:i:s"),
+                        'modified' => date("Y-m-d H:i:s")
+                    ];
+                    Db::init($this->MysqlPool)
+                    ->name('user_top_points')
+                    ->insert($topPoints);
+                } else {
+                    $updatePoints = $userTopPoints[0]['points'] + $points;
+                    //update top points
+                    Db::init($this->MysqlPool)
+                    ->name('user_top_points')->where(['id' => $userTopPoints[0]['id']])
+                    ->update(['points' => $updatePoints]);
+                }
             }
             
             //user Points receive
             $userPoints = [
                 'user_id' => $sender[0]['id'],
+                'anonymous' => $anonymous,
                 'send_to' => $streamer[0]['id'],
                 'points' => $points,
                 'type' => 'receive',
@@ -740,6 +758,7 @@ class WebsocketServer
             //user Points sent
             $userPointsSent = [
                 'user_id' => $streamer[0]['id'],
+                'anonymous' => $anonymous,
                 'send_to' => $sender[0]['id'],
                 'points' => -$points,
                 'type' => 'sent',
