@@ -148,6 +148,9 @@ class WebsocketServer
                     case "get_live_stream":
                         $this->sendLiveStream($ws, $frame->fd, $message);
                         break;
+                    case "refresh":
+                        $this->refreshChat($ws, $frame->fd, $message);
+                        break;
                     default:
                 }
             }
@@ -156,6 +159,23 @@ class WebsocketServer
             echo("Error: Received data is incomplete");
         }
         //echo "receive from {$frame->fd}:{$frame->data},opcode:{$frame->opcode},fin:{$frame->finish}\n";
+    }
+
+    protected function refreshChat(\swoole_websocket_server $ws, $fd, $message = [])
+    {
+        print_r($message);
+        $room = $message['room'];
+        $roomUsers = Db::init($this->MysqlPool)
+        ->name('chatrooms')
+        ->where(['room'=> $room])
+        ->select();
+        $message = [
+            'refresh_chat' => true,
+            'room' => $room
+        ];
+        foreach ($roomUsers as $roomUsers) {
+            $ws->push($roomUsers['fd'], json_encode($message));
+        }
     }
 
     protected function sendLiveStream(\swoole_websocket_server $ws, $fd, $message = [])
