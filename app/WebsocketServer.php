@@ -514,6 +514,7 @@ class WebsocketServer
         
         $roomUsers = $this->getAllUsersInRoom($message['room']);
         $cheerMessage = $message;
+        $message = $this->convertEmotes($message);
         $message = $this->saveMessage($message);
         if (!empty($roomUsers)) {
             if (!empty($message['created'])) {
@@ -549,6 +550,28 @@ class WebsocketServer
                 $ws->push($roomUsers['fd'], json_encode($cheerMessage));
             }
         }
+    }
+
+    protected function convertEmotes($message)
+    {
+        $codes = [];
+        $emotes = Db::init($this->MysqlPool)
+            ->name('emotes')
+            ->field('id,code,photo_dir,photo')
+            ->select();
+        foreach ($emotes as $emote) {
+            $codes[$emote['code']] = "<img width=\"48px\" class=\"emotes\" src=\"/media/emotes/photo/{$emote['photo_dir']}/{$emote['photo']}\" />";
+        }
+        $keys = array_keys($codes);
+        array_multisort(array_map('strlen', $keys), $keys);
+        //print_r($keys);
+        krsort($keys);
+        //print_r($keys);
+        $values = array_values($codes);
+        //print_r($values);
+        $message['message'] = str_replace($keys, $values, $message['message']);
+        print_r($message['message']);
+        return $message;
     }
 
     protected function getHistoryMessages(\swoole_websocket_server $ws, $fd, $message = [])
@@ -847,7 +870,7 @@ class WebsocketServer
                 $return_message["room"] = $this->roomName;
             }
             $return_message["created"] = date('Y-m-d H:i:s', time());
-            $return_message["message"] = htmlspecialchars($return_message['message']);
+            $return_message["message"] = htmlspecialchars(strip_tags($return_message['message']));
             return $return_message;
         }
     }
