@@ -562,15 +562,16 @@ class WebsocketServer
         foreach ($emotes as $emote) {
             $codes[$emote['code']] = "<img width=\"48px\" class=\"emotes\" src=\"/media/emotes/photo/{$emote['photo_dir']}/{$emote['photo']}\" />";
         }
+        $sortKeys = array_map('strlen', array_keys($codes));
+        array_multisort($sortKeys, SORT_DESC, $codes);
         $keys = array_keys($codes);
-        array_multisort(array_map('strlen', $keys), $keys);
+        //krsort($codes);
         //print_r($keys);
-        krsort($keys);
-        //print_r($keys);
+        //print_r($codes);
         $values = array_values($codes);
         //print_r($values);
         $message['message'] = str_replace($keys, $values, $message['message']);
-        print_r($message['message']);
+        //print_r($message['message']);
         return $message;
     }
 
