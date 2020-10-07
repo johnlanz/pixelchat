@@ -554,13 +554,12 @@ class WebsocketServer
 
     protected function convertEmotes($message)
     {
-        $streamer = Db::init($this->MysqlPool)
+        $codes = [];
+        /*$streamer = Db::init($this->MysqlPool)
             ->name('users')
             ->field('id,username,token,coin')
             ->where(['token' => $message['room']])
             ->find();
-
-        $codes = [];
         $emoticons = Db::init($this->MysqlPool)
             ->name('emotes')
             ->field('id,code,photo_dir,photo,type')
@@ -568,12 +567,11 @@ class WebsocketServer
             ->select();
         foreach ($emoticons as $emote) {
             $codes[$emote['code']] = "<img width=\"48px\" class=\"emotes\" src=\"/media/emotes/photo/{$emote['photo_dir']}/{$emote['photo']}\" />";
-        }
+        } */
 
         $emotes = Db::init($this->MysqlPool)
             ->name('emotes')
             ->field('id,code,photo_dir,photo,type')
-            ->where(['user_id' => $streamer[0]['id']])
             ->select();
         foreach ($emotes as $emote) {
             $codes[$emote['code']] = "<img width=\"48px\" class=\"emotes\" src=\"/media/emotes/photo/{$emote['photo_dir']}/{$emote['photo']}\" />";
