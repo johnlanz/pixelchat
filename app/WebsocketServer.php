@@ -886,7 +886,9 @@ class WebsocketServer
                 $return_message["room"] = $this->roomName;
             }
             $return_message["created"] = date('Y-m-d H:i:s', time());
-            $return_message["message"] = htmlspecialchars(strip_tags($return_message['message']));
+            //print_r($return_message);
+            $return_message["message"] = htmlspecialchars($return_message['message']);
+            //print_r($return_message);
             return $return_message;
         }
     }
