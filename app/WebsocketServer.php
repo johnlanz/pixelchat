@@ -477,6 +477,7 @@ class WebsocketServer
                 $tipMessage = '<strong>' . $user .'</strong> sent <strong>'. $message['points'] . ' goo!</strong>';
                 $message['message_type'] = "notification_goo_spent";
             }
+            $message = $this->convertEmotes($message);
             if (!empty($message['message'])) {
                 $tipMessage .= '<br />"<em>' . $message['message'] . '</em>"';
             }
