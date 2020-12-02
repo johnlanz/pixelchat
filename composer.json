@@ -1,5 +1,5 @@
 {
-    "name": "pixelchat",
+    "name": "pixelchat/pixelchat",
     "require": {
         "ezyang/htmlpurifier": "^4.10",
         "nesbot/carbon": "^2.9"
